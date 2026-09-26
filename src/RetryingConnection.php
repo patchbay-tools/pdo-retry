@@ -30,6 +30,10 @@ class RetryingConnection
         private int $baseDelayMs = 50,
         ?ErrorClassifier $classifier = null,
     ) {
+        if ($maxAttempts < 1) {
+            throw new \InvalidArgumentException('maxAttempts must be at least 1');
+        }
+
         $this->factory = Closure::fromCallable($factory);
         $this->classifier = $classifier ?? new ErrorClassifier();
     }
