@@ -21,6 +21,12 @@ class ErrorClassifier
     // MySQL 2006 server gone away, 2013 lost connection during query
     protected const LOST_CODES = [2006, 2013];
 
+    // SQLite reports busy / locked databases with a generic HY000
+    protected const RETRY_MESSAGES = [
+        'database is locked',
+        'database table is locked',
+    ];
+
     protected const LOST_MESSAGES = [
         'server has gone away',
         'lost connection',
@@ -38,6 +44,7 @@ class ErrorClassifier
 
         return in_array($state, static::RETRY_STATES, true)
             || in_array($code, static::RETRY_CODES, true)
+            || $this->messageContains($e, static::RETRY_MESSAGES)
             || $this->isConnectionLost($e);
     }
 
@@ -52,8 +59,13 @@ class ErrorClassifier
             return true;
         }
 
+        return $this->messageContains($e, static::LOST_MESSAGES);
+    }
+
+    private function messageContains(PDOException $e, array $needles): bool
+    {
         $message = strtolower($e->getMessage());
-        foreach (static::LOST_MESSAGES as $needle) {
+        foreach ($needles as $needle) {
             if (str_contains($message, $needle)) {
                 return true;
             }

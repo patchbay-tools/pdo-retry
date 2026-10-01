@@ -47,6 +47,20 @@ class RetryingConnectionTest extends TestCase
         $this->assertSame(3, $calls);
     }
 
+    public function testRetriesSqliteBusy(): void
+    {
+        $calls = 0;
+        $this->connection()->retry(function () use (&$calls) {
+            if (++$calls === 1) {
+                $e = new PDOException('SQLSTATE[HY000]: General error: 5 database is locked');
+                $e->errorInfo = ['HY000', 5, 'database is locked'];
+                throw $e;
+            }
+        });
+
+        $this->assertSame(2, $calls);
+    }
+
     public function testGivesUpAfterMaxAttempts(): void
     {
         $this->expectException(PDOException::class);
